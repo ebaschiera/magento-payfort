@@ -33,14 +33,13 @@ class Payfort_Pay_PaymentController extends Mage_Core_Controller_Front_Action
         $orderId             = Mage::getSingleton('checkout/session')->getLastRealOrderId();
         $_order->loadByIncrementId($orderId);
         $baseCurrencyCode    = Mage::app()->getStore()->getBaseCurrencyCode();
-        $currentCurrencyCode = Mage::app()->getStore()->getCurrentCurrencyCode();
-        $orderAmount         = Mage::helper('payfort/data')->convertFortAmount($_order->getBaseGrandTotal(), $baseCurrencyCode, $currentCurrencyCode);
-        $currency            = $currentCurrencyCode;
+        $decimal_points      = Mage::helper('payfort/data')->getCurrencyDecimalPoint($baseCurrencyCode);
+        $orderAmount         = $_order->getBaseGrandTotal() * (pow(10, $decimal_points));
                 
         $language = Mage::helper('payfort/data')->getLanguage();
         $gatewayParams = array(
             'amount'              => $orderAmount,
-            'currency'            => $currency,
+            'currency'            => $baseCurrencyCode,
             'merchant_identifier' => Mage::getStoreConfig('payment/payfort/merchant_identifier'),
             'access_code'         => Mage::getStoreConfig('payment/payfort/access_code'),
             'merchant_reference'  => $orderId,
@@ -507,8 +506,8 @@ class Payfort_Pay_PaymentController extends Mage_Core_Controller_Front_Action
         $payfortHelper = Mage::helper('payfort/data');
         $order_id = $order->getId();
         $baseCurrencyCode    = Mage::app()->getStore()->getBaseCurrencyCode();//base_currency_code
-        $currentCurrencyCode = Mage::app()->getStore()->getCurrentCurrencyCode();//order_currency_code
-        $currency            = $currentCurrencyCode;
+        $decimal_points      = Mage::helper('payfort/data')->getCurrencyDecimalPoint($baseCurrencyCode);
+        $orderAmount         = $order->getBaseGrandTotal() * (pow(10, $decimal_points));
         $language = Mage::helper('payfort/data')->getLanguage();
         $postData = array(
             'merchant_reference'    => $fortParams['merchant_reference'],
@@ -516,8 +515,8 @@ class Payfort_Pay_PaymentController extends Mage_Core_Controller_Front_Action
             'command'               => Mage::getStoreConfig('payment/payfort/command'),
             'merchant_identifier'   => Mage::getStoreConfig('payment/payfort/merchant_identifier'),
             'customer_ip'           => $order->getData('remote_ip'),
-            'amount'                => Mage::helper('payfort/data')->convertFortAmount($order->getGrandTotal(), $baseCurrencyCode, $currentCurrencyCode),
-            'currency'              => $currency,
+            'amount'                => $orderAmount,
+            'currency'              => $baseCurrencyCode,
             'customer_email'        => $order->getData('customer_email'),
             'customer_name'         => trim($order->getData('customer_firstname').' '.$order->getData('customer_lastname')),
             'token_name'            => $fortParams['token_name'],
